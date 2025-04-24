@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LNP Emulsion Correlation Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles - Light Brown/Tan Theme */
+        :root {
+            --bg-color: #fefce8; /* yellow-50 */
+            --text-color-main: #713f12; /* yellow-800 */
+            --text-color-header: #422006; /* yellow-950 */
+            --text-color-accent: #854d0e; /* yellow-700 */
+            --text-color-subtle: #a16207; /* yellow-600 */
+            --border-color-light: #fef9c3; /* yellow-100 */
+            --border-color-medium: #fde68a; /* yellow-200 */
+            --border-color-dark: #fcd34d; /* yellow-300 */
+            --accent-color: #f59e0b; /* amber-500 */
+            --highlight-bg: #fef9c3; /* yellow-100 */
+            --vis-bg-color: #fffbeb; /* amber-50 */
+            --vis-border-color: #fcd34d; /* yellow-300 */
+            --header-gradient-from: #d97706; /* amber-600 */
+            --header-gradient-to: #ca8a04; /* yellow-600 */
+            --button-bg: #f59e0b; /* amber-500 */
+            --button-hover-bg: #d97706; /* amber-600 */
+            --chart-point-color: rgba(180, 83, 9, 0.7); /* amber-700 with opacity */
+            --chart-trendline-color: #dc2626; /* red-600 */
+            --footer-bg: #422006; /* yellow-950 */
+            --footer-text: #fef9c3; /* yellow-100 */
+             /* Modification Colors */
+            --mod-unmodified-bg: #f3f4f6; --mod-unmodified-text: #4b5563; /* gray */
+            --mod-acetylated-bg: #d1fae5; --mod-acetylated-text: #065f46; /* green */
+            --mod-sulfonated-bg: #dbeafe; --mod-sulfonated-text: #1d4ed8; /* blue */
+            --mod-pam-bg: #fee2e2; --mod-pam-text: #991b1b; /* red */
+            --mod-esterification-bg: #ccfbf1; --mod-esterification-text: #134e4a; /* teal */
+            --mod-cationization-bg: #f3e8ff; --mod-cationization-text: #6b21a8; /* purple */
+            --mod-carboxyalkylation-bg: #fce7f3; --mod-carboxyalkylation-text: #9d174d; /* pink */
+            --mod-pnipam-bg: #ffedd5; --mod-pnipam-text: #9a3412; /* orange */
+            --mod-nanocellulose-bg: #ecfccb; --mod-nanocellulose-text: #4d7c0f; /* lime */
+            --mod-unknown-bg: #e5e7eb; --mod-unknown-text: #374151; /* gray */
+        }
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; color: var(--text-color-main); background-color: var(--bg-color); }
+        .section-container { @apply mb-12 p-6 rounded-lg shadow-lg bg-white; }
+        .section-title { @apply text-2xl font-bold mt-4 mb-6 pb-2 border-b-2; color: var(--text-color-header); border-color: var(--border-color-dark); }
+        .subsection-title { @apply text-xl font-semibold mt-6 mb-3; color: var(--text-color-accent); }
+        .subsubsection-title { @apply text-lg font-semibold mt-5 mb-2; color: var(--text-color-header); }
+        .content-text { @apply text-base leading-relaxed mb-4; color: var(--text-color-main); }
+        strong { color: var(--text-color-accent); font-weight: 600; }
+        code { background-color: var(--highlight-bg); color: var(--text-color-accent); padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        blockquote { border-left: 4px solid var(--accent-color); padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: var(--text-color-subtle); background-color: var(--highlight-bg); }
+        sup { font-size: 0.65em; vertical-align: super; padding-left: 2px; color: var(--accent-color); }
+        header { background-image: linear-gradient(to right, var(--header-gradient-from), var(--header-gradient-to)); color: white; }
+        .interactive-app-container { background-color: #ffffff; border: 1px solid var(--border-color-light); padding: 1.5rem; border-radius: 0.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .interactive-title { @apply text-lg font-semibold text-center mb-3; color: var(--text-color-accent); }
+        .interactive-description { @apply text-sm text-center mb-4; color: var(--text-color-subtle); }
+        .filter-container { @apply flex flex-wrap gap-3 justify-center mb-4 p-3 rounded; background-color: var(--highlight-bg); border: 1px solid var(--border-color-medium); }
+        .filter-container label { display: none; }
+        .filter-container select, .filter-container button { @apply p-2 border rounded text-sm shadow-sm; border-color: var(--border-color-medium); background-color: white; color: var(--text-color-main); }
+        .filter-container button { background-color: var(--button-bg); color: white; font-weight: 500; transition: background-color 0.2s ease; }
+        .filter-container button:hover { background-color: var(--button-hover-bg); }
+        .filter-container button.secondary { background-color: #e5e7eb; color: #374151; }
+        .filter-container button.secondary:hover { background-color: #d1d5db; }
+        .tooltip-mod-tag { @apply inline-block px-1 py-0 rounded text-xs font-semibold mr-1; }
+        .chart-container { @apply border p-4 rounded shadow-sm mt-6; background-color: white; border-color: var(--border-color-medium); }
+        .chart-title { @apply font-semibold text-center text-lg mb-3; color: var(--text-color-subtle); }
+        footer { background-color: var(--footer-bg); color: var(--footer-text); margin-top: 3rem; padding: 1.5rem 0; }
+        footer p { @apply text-sm; }
+        footer a { color: var(--accent-color); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        /* Table Styling Removed */
+        .trendline-equation { @apply text-center text-sm mt-2 font-mono; color: var(--chart-trendline-color); }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="shadow-md">
+        <div class="container mx-auto px-6 py-5 text-center">
+             <h1 class="text-3xl font-bold mb-2">LNP Emulsion Correlation Explorer</h1>
+             <p class="text-lg font-medium text-amber-100">Analyzing LNP Size, Concentration, and Droplet Size Relationships</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+
+        {/* Section 1: Explanation of Analysis */}
+        <section id="explanation" class="section-container">
+            <h2 class="section-title">1. Analyzing Correlations in LNP-Stabilized Emulsions</h2>
+             <h3 class="subsection-title">Limitations of Simple Models</h3>
+            <p class="content-text">
+                Initial analysis using the Lignin Coverage Number ($Lc \propto \frac{C_{LNP} \cdot D_{emulsion}}{d_{LNP}}$) revealed significant data scatter when plotted against droplet size ($D_{emulsion}$). This indicates that while $Lc$ captures the basic geometric concept of particle coverage, it fails to account for the dominant influence of other critical factors in these complex systems.
+            </p>
+            <p class="content-text">
+                Key confounding variables include:
+                <ul class="list-disc list-inside space-y-1 text-sm ml-4">
+                    <li><strong>Lignin Heterogeneity & Modification:</strong> Different sources (Kraft, Alkali, etc.) and chemical modifications (acetylation, sulfonation, grafting) drastically alter interfacial behavior.</li>
+                    <li><strong>pH Sensitivity:</strong> LNP charge, aggregation, and solubility are highly pH-dependent, affecting stability mechanisms beyond simple coverage.</li>
+                    <li><strong>Kinetic Effects & Energy Input:</strong> Emulsification method and energy input influence initial droplet size and particle adsorption kinetics.</li>
+                    <li><strong>Measurement Variability:</strong> Differences in LNP and droplet size measurement techniques across studies introduce noise.</li>
+                </ul>
+            </p>
+             <h3 class="subsection-title">Refined Analysis Strategy</h3>
+             <p class="content-text">
+                 To obtain potentially clearer correlations, we can explore the relationship suggested by dimensional analysis, $D_{emulsion} \propto d_{LNP} / C_{LNP}$, for different subsets of the data available in the Marquez et al. review. We plot droplet size ($D_{emulsion}$) against the combined parameter $X = d_{LNP} / C_{LNP}$ and apply a power-law trendline ($D = a \cdot X^b$) to quantify the correlation ($R^2$) for the currently filtered data.
+             </p>
+             <p class="content-text">
+                 Use the filters below to select specific conditions. The "Apply Clean Subset" button provides a recommended starting point by filtering for unmodified lignins in the optimal pH range (4-7) and excluding very large LNPs (>2000nm), which often yields a better correlation. However, you can apply the trendline to any filtered subset.
+             </p>
+            <blockquote class="text-sm">
+                 <strong>Note:</strong> The $R^2$ value indicates how well the power-law model fits the selected data subset. A low $R^2$ for a given filter combination highlights the influence of factors not captured by the simple $d_{LNP}/C_{LNP}$ ratio.
+             </blockquote>
+        </section>
+
+        {/* Section 2: Interactive Graph & Filters */}
+        <section id="explorer" class="section-container">
+            <h2 class="section-title">2. Explore $D_{emulsion}$ vs. ($d_{LNP}/C_{LNP}$) Correlation</h2>
+             <div class="interactive-app-container" style="background-color: var(--highlight-bg);">
+                <h4 class="interactive-title">$D_{emulsion}$ vs. ($d_{LNP}/C_{LNP}$) Plot</h4>
+                <p class="interactive-description">
+                    Use the filters to select specific lignin types, modifications, or conditions from the Marquez et al. review. The graph below plots the Emulsion Droplet Size ($D_{emulsion}$) against the combined parameter $d_{LNP}/C_{LNP}$ for the matching studies. Hover over points for details (color-coded by modification). The power-law trendline and $R^2$ value are calculated and displayed for the currently visible data points.
+                </p>
+                {/* Filter Controls */}
+                 <div class="filter-container" style="background-color: var(--bg-color);">
+                    <select id="filter-lignin-type" title="Filter by Lignin Type"><option value="">Lignin Type...</option><option value="KL">Kraft</option><option value="ALK">Alkali</option><option value="OL">Organosolv</option><option value="SKL">Softwood Kraft</option>{/* Add more */}</select>
+                    <select id="filter-modification" title="Filter by Modification"><option value="">Modification...</option><option value="unmodified">Unmodified</option><option value="acetylated">Acetylated</option><option value="sulfonated">Sulfonated</option><option value="cationization">Cationization</option><option value="esterification">Esterification</option><option value="carboxyalkylation">Carboxyalkylation</option><option value="pnipam">PNIPAM Grafting</option><option value="pam">PAM Grafting</option><option value="nanocellulose">Hybrid w/ NC</option></select>
+                    <select id="filter-lnp-size" title="Filter by LNP Size"><option value="">LNP Size (nm)...</option><option value="<100">&lt;100</option><option value="100-500">100-500</option><option value=">500">&gt;500</option></select>
+                    <select id="filter-lnp-conc" title="Filter by LNP Conc."><option value="">LNP Conc (wt%)...</option><option value="<0.2">&lt;0.2</option><option value="0.2-1.0">0.2-1.0</option><option value=">1.0">&gt;1.0</option></select>
+                    <select id="filter-ph" title="Filter by pH"><option value="">pH...</option><option value="<4">&lt;4</option><option value="4-7">4-7</option><option value=">7">&gt;7</option></select>
+                    <button id="apply-filters">Apply Filters & Trendline</button>
+                    <button id="apply-clean-subset" class="secondary" title="Filter for Unmodified, pH 4-7, Exclude Size > 2000nm">Show Clean Subset</button>
+                    <button id="reset-view" class="secondary">Reset View</button>
+                </div>
+
+                {/* Chart Container */}
+                <div class="chart-container">
+                    <canvas id="correlationChart"></canvas>
+                     <div id="trendline-equation-display" class="trendline-equation" style="display: none;"></div>
+                </div>
+
+                 <div class="text-center text-gray-500 italic text-xs mt-4" style="color: var(--text-color-subtle);">
+                     (Requires JavaScript: Filter data, calculate X, plot points dynamically, calculate/show trendline and R²)
+                 </div>
+             </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 - LNP-Pickering Emulsion Interactive Learning Module.</p>
+            <p>Concept based on analysis of Marquez, Rojas, et al. (2024/2025).</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Core JavaScript Functionality ---
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // --- Get DOM Elements ---
+            const applyFiltersButton = document.getElementById('apply-filters');
+            const applyCleanSubsetButton = document.getElementById('apply-clean-subset');
+            const resetViewButton = document.getElementById('reset-view');
+            const correlationChartCanvas = document.getElementById('correlationChart')?.getContext('2d');
+            const trendlineEquationDisplay = document.getElementById('trendline-equation-display');
+
+
+            let correlationChart; // Chart.js instance
+            let allChartDataPoints = []; // Stores all data points {x: d_lnp/c_lnp, y: d_emulsion, details: {}}
+
+            // --- Mock Data (Representative data from Marquez et al. review) ---
+            const mockStudies = [
+                 // ... (same mockStudies array as previous version) ...
+                { id: 1, ligninType: 'KL', modification: 'unmodified', lnpSize: 356, lnpConc: 0.3, pH: 7, dropletSize: 5.7, stability: 'Stable >2mo', ref: 'Ago [65]', fig: 'Fig 3a/b' },
+                { id: 2, ligninType: 'KL', modification: 'unmodified', lnpSize: 1019, lnpConc: 0.3, pH: 7, dropletSize: 7.8, stability: 'Stable >2mo', ref: 'Ago [65]', fig: 'Fig 3a/b' },
+                { id: 3, ligninType: 'ALK', modification: 'unmodified', lnpSize: 182, lnpConc: 1.0, pH: 3, dropletSize: 22.3, stability: 'Stable 6mo', ref: 'Wei [57]', fig: 'Fig 9a/b' },
+                { id: 4, ligninType: 'ALK', modification: 'unmodified', lnpSize: 182, lnpConc: 0.05, pH: 3, dropletSize: 58.9, stability: 'Phase sep.', ref: 'Wei [57]', fig: 'Fig 9a/b' },
+                { id: 5, ligninType: 'KL', modification: 'unmodified', lnpSize: 28.5, lnpConc: 0.4, pH: 7, dropletSize: 5, stability: 'Highly Stable', ref: 'Li [49]', fig: 'Fig 10' },
+                { id: 6, ligninType: 'KL', modification: 'acetylated', lnpSize: 30, lnpConc: 8.0, pH: 7, dropletSize: 5, stability: 'Stable weeks (W/O)', ref: 'Borrero-López [53]' },
+                { id: 7, ligninType: 'KL', modification: 'sulfonated', lnpSize: 750, lnpConc: 0.25, pH: 3, dropletSize: 4.5, stability: 'Ultrastable', ref: 'Ghavidel [66]', fig: 'Fig 12c' },
+                { id: 8, ligninType: 'KL', modification: 'sulfonated', lnpSize: 60, lnpConc: 0.25, pH: 7, dropletSize: 11, stability: 'Partially Stable', ref: 'Ghavidel [66]', fig: 'Fig 12b' },
+                { id: 9, ligninType: 'KL', modification: 'pam', lnpSize: 14, lnpConc: 0.1, pH: 7, dropletSize: 50, stability: 'Stable months', ref: 'Silmore [46]' },
+                { id: 10, ligninType: 'ALK', modification: 'pnipam', lnpSize: 160, lnpConc: 0.1, pH: 7, dropletSize: 10, stability: 'Highly Stable', ref: 'Wang [93]', fig: 'Fig 13' },
+                { id: 11, ligninType: 'KL', modification: 'unmodified', lnpSize: 354, lnpConc: 0.5, pH: 7, dropletSize: 40, stability: 'Stable', ref: 'Pang [62]', fig: 'Fig 6a' },
+                { id: 12, ligninType: 'KL', modification: 'unmodified', lnpSize: 3547, lnpConc: 0.5, pH: 7, dropletSize: 65, stability: 'Stable', ref: 'Pang [62]', fig: 'Fig 6a' }, // Outlier candidate
+                { id: 13, ligninType: 'KL', modification: 'unmodified', lnpSize: 15, lnpConc: 0.5, pH: 7, dropletSize: 1, stability: 'Stable >1mo', ref: 'El Bouhali [56]'},
+                { id: 14, ligninType: 'ALK', modification: 'unmodified', lnpSize: 200, lnpConc: 0.2, pH: 6, dropletSize: 8, stability: 'Stable >3mo', ref: 'Hadjiefstathiou [74]'},
+                { id: 15, ligninType: 'ALK', modification: 'unmodified', lnpSize: 400, lnpConc: 0.2, pH: 3, dropletSize: 20, stability: 'Unstable', ref: 'Hadjiefstathiou [74]'},
+                { id: 16, ligninType: 'ALK', modification: 'carboxyalkylation', lnpSize: 300, lnpConc: 0.5, pH: 6, dropletSize: 3.5, stability: 'Stable', ref: 'Shomali [72]'},
+                { id: 17, ligninType: 'SKL', modification: 'cationization', lnpSize: 259, lnpConc: 0.1, pH: 5, dropletSize: 8, stability: 'Stable', ref: 'Sipponen [47]'},
+                { id: 18, ligninType: 'KL', modification: 'esterification', lnpSize: 100, lnpConc: 2.0, pH: 7, dropletSize: 2, stability: 'Stable', ref: 'Shorey [91]'},
+                { id: 19, ligninType: 'ALK', modification: 'nanocellulose', lnpSize: 132, lnpConc: 0.1, pH: 8, dropletSize: 0.5, stability: 'Highly Stable', ref: 'Agustin [90]'},
+            ];
+
+            // --- Function to Calculate X parameter ---
+            function calculateX(lnpSize, lnpConc) {
+                if (!lnpSize || !lnpConc || lnpSize <= 0 || lnpConc <= 0) { return NaN; }
+                return lnpSize / lnpConc;
+            }
+
+             // --- Function to get color based on modification ---
+            function getModificationColorInfo(modType) {
+                const modClean = modType.toLowerCase().trim();
+                const style = getComputedStyle(document.documentElement);
+                const bgColorVar = `--mod-${modClean}-bg`;
+                const textColorVar = `--mod-${modClean}-text`;
+                return {
+                    bg: style.getPropertyValue(bgColorVar) || style.getPropertyValue('--mod-unknown-bg').trim(),
+                    text: style.getPropertyValue(textColorVar) || style.getPropertyValue('--mod-unknown-text').trim()
+                };
+            }
+
+            // --- Pre-calculate X and prepare all data points ---
+            allChartDataPoints = mockStudies.map(study => {
+                const xValue = calculateX(study.lnpSize, study.lnpConc);
+                const colorInfo = getModificationColorInfo(study.modification);
+                return {
+                    x: isNaN(xValue) ? null : xValue, // X = d_lnp / c_lnp
+                    y: study.dropletSize, // Y = d_emulsion
+                    details: study,
+                    pointBackgroundColor: colorInfo.bg,
+                    pointBorderColor: colorInfo.text
+                };
+            }).filter(point => point.x !== null && point.y !== null);
+
+
+             // --- Function to Calculate and Add Trendline with R^2 ---
+            function addTrendline(chart, dataPoints) {
+                 // Remove existing trendline dataset if present
+                 const existingTrendlineIndex = chart.data.datasets.findIndex(ds => ds.label === 'Trendline');
+                 if (existingTrendlineIndex > -1) {
+                     chart.data.datasets.splice(existingTrendlineIndex, 1);
+                 }
+                 trendlineEquationDisplay.style.display = 'none'; // Hide equation initially
+
+                 if (dataPoints.length < 2) {
+                      chart.update(); // Update chart even if no trendline added
+                      return; // Need at least 2 points
+                 }
+
+                 // Perform linear regression on log-transformed data: log(y) = b*log(x) + log(a)
+                 const logData = dataPoints.map(p => ({ logX: Math.log(p.x), logY: Math.log(p.y) }));
+
+                 let sumLogX = 0, sumLogY = 0, sumLogXLogY = 0, sumLogX2 = 0;
+                 logData.forEach(p => {
+                     sumLogX += p.logX;
+                     sumLogY += p.logY;
+                     sumLogXLogY += p.logX * p.logY;
+                     sumLogX2 += p.logX * p.logX;
+                 });
+                 const n = logData.length;
+                 const slope_b = (n * sumLogXLogY - sumLogX * sumLogY) / (n * sumLogX2 - sumLogX * sumLogX);
+                 const intercept_log_a = (sumLogY - slope_b * sumLogX) / n;
+                 const intercept_a = Math.exp(intercept_log_a);
+
+                 // Calculate R^2
+                 const meanLogY = sumLogY / n;
+                 let SST = 0; // Total sum of squares
+                 let SSR = 0; // Residual sum of squares
+                 logData.forEach(p => {
+                     const logY_pred = slope_b * p.logX + intercept_log_a;
+                     SST += Math.pow(p.logY - meanLogY, 2);
+                     SSR += Math.pow(p.logY - logY_pred, 2);
+                 });
+                 const R2 = SST === 0 ? 1 : 1 - (SSR / SST); // R^2 = 1 if all points are identical
+
+                 // Generate trendline points
+                 const minX = Math.min(...dataPoints.map(p => p.x));
+                 const maxX = Math.max(...dataPoints.map(p => p.x));
+                 const trendlinePoints = [];
+                 const numPoints = 20; // Number of points for smooth curve
+                 for (let i = 0; i <= numPoints; i++) {
+                      const x = Math.exp(Math.log(minX) + (Math.log(maxX) - Math.log(minX)) * i / numPoints); // Log scale distribution
+                      trendlinePoints.push({ x: x, y: intercept_a * Math.pow(x, slope_b) });
+                 }
+
+
+                 // Add trendline dataset to chart
+                 chart.data.datasets.push({
+                     label: 'Trendline',
+                     data: trendlinePoints,
+                     type: 'line',
+                     borderColor: 'var(--chart-trendline-color)',
+                     borderWidth: 2,
+                     fill: false,
+                     pointRadius: 0,
+                     tension: 0.1
+                 });
+
+                 // Display equation and R^2
+                 trendlineEquationDisplay.innerHTML = `Trendline: $D_{emulsion} \\approx ${intercept_a.toFixed(2)} \\cdot (d_{LNP}/C_{LNP})^{${slope_b.toFixed(2)}}$ &nbsp;&nbsp; ($R^2 = ${R2.toFixed(3)}$)`;
+                 trendlineEquationDisplay.style.display = 'block';
+                 if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    MathJax.typesetPromise([trendlineEquationDisplay]); // Retypeset the equation
+                 }
+
+                 chart.update();
+            }
+
+
+            // --- Function to Filter and Update Chart ---
+            function filterAndPlotData(applyCleanSubset = false) {
+                let filteredPoints;
+
+                if (applyCleanSubset) {
+                    // Apply predefined "clean" filters
+                    document.getElementById('filter-modification').value = 'unmodified';
+                    document.getElementById('filter-ph').value = '4-7';
+                    document.getElementById('filter-lignin-type').value = '';
+                    document.getElementById('filter-lnp-size').value = '';
+                    document.getElementById('filter-lnp-conc').value = '';
+
+                    filteredPoints = allChartDataPoints.filter(point => {
+                        const study = point.details;
+                        return study.modification === 'unmodified' &&
+                               study.pH >= 4 && study.pH <= 7 &&
+                               study.lnpSize <= 2000; // Exclude the large outlier
+                    });
+                } else {
+                    // Apply filters selected by the user
+                    const typeFilter = document.getElementById('filter-lignin-type').value;
+                    const modFilter = document.getElementById('filter-modification').value;
+                    const sizeFilter = document.getElementById('filter-lnp-size').value;
+                    const concFilter = document.getElementById('filter-lnp-conc').value;
+                    const phFilter = document.getElementById('filter-ph').value;
+
+                    filteredPoints = allChartDataPoints.filter(point => {
+                        const study = point.details;
+                        let pass = true;
+                        if (typeFilter && study.ligninType !== typeFilter) pass = false;
+                        if (modFilter && study.modification !== modFilter) pass = false;
+                        if (sizeFilter) {
+                            if (sizeFilter === '<100' && study.lnpSize >= 100) pass = false;
+                            if (sizeFilter === '100-500' && (study.lnpSize < 100 || study.lnpSize > 500)) pass = false;
+                            if (sizeFilter === '>500' && study.lnpSize <= 500) pass = false;
+                        }
+                         if (concFilter) {
+                            if (concFilter === '<0.2' && study.lnpConc >= 0.2) pass = false;
+                            if (concFilter === '0.2-1.0' && (study.lnpConc < 0.2 || study.lnpConc > 1.0)) pass = false;
+                            if (concFilter === '>1.0' && study.lnpConc <= 1.0) pass = false;
+                        }
+                         if (phFilter) {
+                            if (phFilter === '<4' && study.pH >= 4) pass = false;
+                            if (phFilter === '4-7' && (study.pH < 4 || study.pH > 7)) pass = false;
+                            if (phFilter === '>7' && study.pH <= 7) pass = false;
+                        }
+                        return pass;
+                    });
+                }
+
+                // Update chart data
+                if (correlationChart) {
+                    correlationChart.data.datasets[0].data = filteredPoints;
+                    correlationChart.data.datasets[0].pointBackgroundColor = filteredPoints.map(p => p.pointBackgroundColor);
+                    correlationChart.data.datasets[0].pointBorderColor = filteredPoints.map(p => p.pointBorderColor);
+
+                    // Calculate and add trendline for the CURRENTLY filtered data
+                    addTrendline(correlationChart, filteredPoints);
+                }
+            }
+
+            // --- Initialize Chart ---
+            function initializeChart() {
+                if (!correlationChartCanvas) return;
+                const chartOptions = {
+                     plugins: {
+                         legend: { display: false },
+                         tooltip: {
+                             callbacks: {
+                                 label: function(context) {
+                                     const pointData = context.raw;
+                                     const study = pointData.details;
+                                     let lines = [];
+                                     lines.push(`Ref: ${study.ref}`);
+                                     lines.push(`Mod: ${study.modification}`);
+                                     lines.push(`LNP: ${study.lnpSize}nm, ${study.lnpConc}wt%, pH ${study.pH}`);
+                                     lines.push(`Droplet: ${study.dropletSize.toFixed(1)} µm`);
+                                     lines.push(`X = dLNP/CLNP ≈ ${pointData.x.toFixed(0)} nm/wt%`);
+                                     return lines;
+                                 }
+                             }
+                         }
+                     },
+                     scales: {
+                         x: { // d_LNP / C_LNP
+                             title: { display: true, text: 'X = d_LNP / C_LNP (nm / wt%)', font: { size: 12 } },
+                             ticks: { font: { size: 10 } },
+                             type: 'logarithmic',
+                             min: 10
+                         },
+                         y: { // D_emulsion
+                             title: { display: true, text: 'Droplet Size (D_emulsion, µm)', font: { size: 12 } },
+                             ticks: { font: { size: 10 } },
+                             type: 'logarithmic',
+                             min: 0.1
+                         }
+                     }
+                 };
+                correlationChart = new Chart(correlationChartCanvas, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Study Data',
+                            data: [],
+                            pointBackgroundColor: [],
+                            pointBorderColor: [],
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // --- Event Listeners ---
+            if (applyFiltersButton) {
+                applyFiltersButton.addEventListener('click', () => filterAndPlotData(false));
+            }
+             if (applyCleanSubsetButton) {
+                 applyCleanSubsetButton.addEventListener('click', () => filterAndPlotData(true));
+             }
+             if (resetViewButton) {
+                 resetViewButton.addEventListener('click', () => {
+                     // Reset filters
+                     document.getElementById('filter-lignin-type').value = '';
+                     document.getElementById('filter-modification').value = '';
+                     document.getElementById('filter-lnp-size').value = '';
+                     document.getElementById('filter-lnp-conc').value = '';
+                     document.getElementById('filter-ph').value = '';
+                     // Reload all data and hide trendline
+                     trendlineEquationDisplay.style.display = 'none';
+                     filterAndPlotData(false); // Re-plot all data, which will remove trendline
+                 });
+             }
+
+            // --- Initialize ---
+            initializeChart();
+            filterAndPlotData(false); // Plot all data on load (no trendline initially)
+            if (typeof MathJax !== 'undefined' && MathJax.typeset) {
+                 MathJax.typeset();
+            }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>
